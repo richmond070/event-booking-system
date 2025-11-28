@@ -164,7 +164,7 @@ Throughout the questions, schema and migration decisions were clarified to ensur
 
 Finally, after solidifying the models, transactions, caches, and testing strategy, the services were rewritten into their “final iteration” form. This version cleanly enforces FIFO ordering, properly manages ticket counts, ensures atomic updates through withTransaction, and exposes predictable booking and cancellation flows. The design achieves the project’s goals: correctness under concurrency, clarity of logic, modular architecture, and maintainability.
 
-## Sample API Documentation
+## API Documentation
 
 Below are key endpoints, sample responses, and cURL examples.
 
@@ -308,7 +308,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-console.log("🌱 Seeding database...");
+console.log("Seeding database...");
 
 const event = await prisma.event.create({
 data: {
