@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+  // output   = "../src/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Booking status enum
+enum BookingStatus {
+  BOOKED
+  CANCELLED
+}
+
+model Event {
+  event_id         String   @id @default(uuid()) @map("event_id")
+  name             String?
+  totalTickets     Int
+  availableTickets Int
+  createdAt        DateTime @default(now())
+  updateAt         DateTime @updatedAt
+
+  bookings    Booking[]
+  waitingList WaitingList[]
+
+  @@index([name])
+}
+
+model User {
+  user_id   String   @id @default(uuid()) @map("user_id")
+  name      String?
+  email     String?  @unique(map: "user_email_unique")
+  createdAt DateTime @default(now())
+
+  bookings    Booking[]
+  waitingList WaitingList[]
+}
+
+model Booking {
+  booking_id   String        @id @default(uuid()) @map("booking_id")
+  eventId      String
+  userId       String
+  booking_date DateTime      @default(now())
+  update_date  DateTime      @updatedAt
+  status       BookingStatus @default(BOOKED)
+
+  user  User  @relation(fields: [userId], references: [user_id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [event_id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@index([userId])
+}
+
+model WaitingList {
+  waitList_id String   @id @default(uuid()) @map("waitList_id")
+  userId      String
+  eventId     String
+  position    Int
+  createdAt   DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [user_id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [event_id], onDelete: Cascade)
+
+  @@unique([eventId, position], name: "waitingList_event_position_unique")
+  @@index([eventId])
+}
