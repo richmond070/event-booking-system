@@ -1,149 +1,24 @@
-# 🎟️ Event Booking System — Backend (Node.js + TypeScript + Prisma + PostgreSQL)
+# Event Booking System
 
-#### This project implements a fully functional Event Ticket Booking System with support for:
+## Project Overview
 
-- Event initialization
+This project implements a robust event booking system designed to manage ticket sales, enforce FIFO-based waiting lists, and maintain strict data consistency through transactional operations. It provides a clean separation of concerns using a layered architecture made up of Services, Stores, and Caches, with Prisma as the ORM for database persistence. While making clear use of four design patterns; Service Layer Pattern (Service Layer), Repository/Store Pattern (Store Layer), Dependency Injection (Constructor), and Factory Pattern (Prisma Client).
 
-- Concurrent ticket booking
+The system enables users to book or cancel tickets for an event while ensuring fairness, preventing race conditions, and automatically handling promotions from the waiting list when tickets become available. It includes full support for:
 
-- FIFO waiting list management
+- **Transactional Booking Logic** — Every booking or cancellation runs inside a withTransaction wrapper to guarantee atomic updates across Event, Booking, and Waitlist tables.
 
-- Automatic re-assignment of canceled tickets
+- **FIFO Waiting List** — When the event is sold out, users are queued in strict first-come-first-served order. If a user cancels or a slot opens, the next waiting user is automatically promoted.
 
-- Comprehensive REST API
+- **Booking State Enforcement** — Users cannot double-book, cannot jump the queue, and cannot be promoted twice.
 
-- Real database persistence using PostgreSQL + Prisma
+- **Consistent Data Store Layer** — All persistence goes through the OrderService, ensuring the same logic is used across booking, cancellation, and waiting list management.
 
-- Thorough Test-Driven Development (unit + integration tests)
+- **Pluggable Caching Layer** — A lightweight in-memory cache reduces redundant lookups and allows controlled synchronous reads while the database remains the source of truth.
 
-The implementation strictly follows the original project brief, ensuring a production-ready, scalable, and testable solution.
+- **Comprehensive Test Suite** — Includes unit tests (mocked with withTransaction) and integration tests ensuring that FIFO ordering, waiting list promotions, edge cases, and race-sensitive conditions all behave correctly.
 
-#### A clean, test-driven event-booking system that supports:
-
-- Event creation & ticket availability
-
-- User creation and lookup
-
-- Booking tickets
-
-- Canceling bookings
-
-- Automatic waiting-list management
-
-- Fully modular architecture (Services + Stores + DTOs + Middleware)
-
-- Full integration test suite (Jest + Supertest)
-
-- Prisma ORM with migration + seed workflow
-
-## 📌 Architecture Summary
-
-### Backend Framework
-
-- Node.js + Express.js
-
-### Database
-
-- PostgreSQL with Prisma ORM
-
-- Includes migrations, seeding, normalized relational schema, indexes, and unique constraints
-
-### Concurrency Handling
-
-- All booking, waiting-list, and cancellation logic is wrapped inside Prisma transactions using a _withTransaction()_ helper that guarantees:
-
-### ACID compliance
-
-- Safe sequential operations under load
-
-- Protection against race conditions
-
-### Data Storage
-
-- Event table
-
-- User table
-
-- Booking table (with BOOKED / CANCELLED enum)
-
-- WaitingList table (FIFO queue with unique position per event)
-
-### Caching Layer
-
-In-memory structures (BookingCache, EventStore) are used for fast lookups during tests and demo mode, but all persisted state lives in PostgreSQL.
-
-## 📁 Project Structure
-
-```
-event-booking/
-├── prisma/
-│   ├── migrations/
-│   ├── schema.prisma
-│   └── seed.ts
-│
-├── src/
-│   ├── config/
-│   │   ├── database.ts
-│   │   └── index.ts
-│   │
-│   ├── event/
-│   │   ├── event.store.ts
-│   │   ├── event.service.ts
-│   │   └── event.ts
-│   │
-│   ├── booking/
-│   │   ├── booking.store.ts
-│   │   ├── booking.service.ts
-│   │   ├── booking.controller.ts
-│   │   ├── booking.dto.ts
-│   │   └── index.ts
-│   │
-│   ├── user/
-│   │   ├── user.service.ts
-│   │   └── user.store.ts
-│   │
-│   ├── order/
-│   │   └── order.service.ts
-│   │
-│   ├── models/
-│   │   ├── Booking.ts
-│   │   ├── Event.ts
-│   │   ├── User.ts
-│   │   └── WaitingList.ts
-│   │
-│   ├── middleware/
-│   │   ├── errors/
-│   │   │   ├── eventNotFoundError.ts
-│   │   │   ├── alreadyBookedError.ts
-│   │   │   └── bookingNotFoundError.ts
-│   │   └── errorHandler.ts
-│   │
-│   ├── commonInputTypes.ts
-│   ├── enums.ts
-│   ├── app.ts
-│   └── server.ts
-│
-├── tests/
-│   ├── unit/
-│   │   ├── event.test.ts
-│   │   ├── booking.test.ts
-│   │   └── waitingList.test.ts
-|   ├── integration/
-│   │   ├── event.test.ts
-│   │   ├── booking.test.ts
-│   │   └── waitingList.test.ts
-│   └── setup.ts
-|       ├── event.test.ts
-│       ├── booking.test.ts
-│       └── waitingList.test.ts
-│
-├── package.json
-├── tsconfig.json
-├── .env.example
-└── README.md
-```
-
-## ⚙️ Setup Instructions
+## Setup Instructions
 
 ### 1. Clone the repository
 
@@ -172,6 +47,15 @@ _.env.example_ should look like:
 DATABASE_URL="postgresql://postgres:password@host/database"
 PORT=4000
 NODE_ENV=development
+JWT_SECRET= "Your secret"
+JWT_EXPIRES_IN="1h"
+
+LOG_LEVEL=info
+
+
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX=30
+RATE_LIMIT_MESSAGE="Too many requests, please try again later."
 ```
 
 Update with your real credentials.
@@ -245,11 +129,45 @@ npm run test:watch
 npm run test:integration
 ```
 
-## 📝 Sample API Documentation
+## Brief Explanation ON My Design Choice
+
+The project evolved through a series of design decisions aimed at building a reliable, scalable, and testable event-booking system with FIFO waitlisting, atomic transactions, consistent data models, and predictable behavior across concurrent operations. The entire architecture was refined through iterative questions touching on schemas, services, caching layers, tests, error handling, and database consistency—each influencing the final form of the application.
+
+The first major design choice was the separation of responsibilities into well-defined service classes. The BookingService, EventService, and various cache components were shaped to follow SOLID principles and maintain clear ownership of domain logic. This separation ensures that event persistence, booking operations, waitlist management, and cache lookups remain modular, easy to test, and simple to extend.
+
+A significant portion of the design effort centered around correct FIFO behavior for the waiting list. Something that informed this decision was the need for a unavoidable, testable, and promotion-safe ordering under all booking and cancellation flows.Through multiple iterations, the system was structured so that every booking operation—whether reserving a ticket or placing a user in the waitlist follows strict ordering guarantees. Careful attention was given to the data models, the in-memory queue structure, and the final version of the services to ensure that each user is processed according to arrival time and that waitlist promotions behave accordingly.
+
+The use of Prisma transactions shaped another architectural pillar. The helper method:
+
+```ts
+withTransaction(callback);
+```
+
+was introduced to guarantee atomicity during booking and cancellation flows. It centralizes transaction control, allowing complex operations—like decrementing available tickets, enqueuing users, or promoting them from the waitlist—to execute as a single unit of work. This prevents race conditions and ensures that the system behaves correctly under load. This callback ensured that all queries run on the same transactional client, guaranteeing isolation, consistency, and preventing partial writes even if an error occurs.
+
+During development, multiple test-related questions led to the decision to build a fully isolated test environment with mocks for transaction clients, Prisma operations, and cache implementations. some of this questions were surrounded around:
+
+- Direct prisma usage
+- Transactions be mocked safely
+- Cache state persisting between tests
+- worker leaks
+- inconsistences in mocks
+- Testing the real DB + business logic at once which was unstable
+  This made the unit tests more accurate and ensured that FIFO behavior, waitlist transitions, and booking IDs were validated thoroughly. The design also accounted for Jest teardown issues by eliminating lingering async timers and guaranteeing cleanup in mocks.
+
+Another part of the conversation focused heavily on environment configuration and infrastructure choices. Logging was implemented with Pino, rate-limiting and JWT authentication (Not implemented) were designed to be initialized purely from the project’s config.ts, and environment variables were structured with a full .env template. This isolates environment-specific behavior and keeps the application highly configurable across development, testing, and production.
+
+The user data and caching layer were also reshaped multiple times. The final iteration introduced a clear UserCache with lookup by ID and email, ensuring that frequently accessed user records could be fetched quickly without burdening the database. The refined design ensures both correctness and performance while still remaining simple enough.
+
+Throughout the questions, schema and migration decisions were clarified to ensure the Prisma models reflected all the booking rules: event capacity, tickets sold, waitlist entries, and booking references. The migration plan was validated step-by-step to ensure that the database state matched the schema and that no drift occurred.
+
+Finally, after solidifying the models, transactions, caches, and testing strategy, the services were rewritten into their “final iteration” form. This version cleanly enforces FIFO ordering, properly manages ticket counts, ensures atomic updates through withTransaction, and exposes predictable booking and cancellation flows. The design achieves the project’s goals: correctness under concurrency, clarity of logic, modular architecture, and maintainability.
+
+## Sample API Documentation
 
 Below are key endpoints, sample responses, and cURL examples.
 
-### 🎉 1. Initialize Event
+### 1. Initialize Event
 
 POST _/api/initialize_
 
@@ -284,7 +202,7 @@ curl -X POST http://localhost:4000/api/initialize \
 -d '{"name":"Tech Summit","totalTickets":50}'
 ```
 
-### 🎫 2. Book Ticket
+### 2. Book Ticket
 
 POST _/api/book_
 
@@ -324,7 +242,7 @@ curl -X POST http://localhost:4000/api/book \
 -d '{"name":"John Doe","email":"john@example.com","eventId":"event-id"}'
 ```
 
-### ❌ 3. Cancel Booking
+### 3. Cancel Booking
 
 POST _/api/cancel_
 
@@ -362,7 +280,7 @@ curl -X POST http://localhost:4000/api/cancel \
 -d '{"bookingId":"booking-id"}'
 ```
 
-### 📊 4. Event Status
+### 4. Event Status
 
 GET _/api/events/:id/status_
 
@@ -382,7 +300,7 @@ GET _/api/events/:id/status_
 curl http://localhost:4000/api/events/<eventId>/status
 ```
 
-## 🌱 Sample seed.ts (for reference)
+## Sample seed.ts (for reference)
 
 ```typeScript
 import { PrismaClient } from '@prisma/client';
@@ -523,13 +441,13 @@ prisma.$transaction(async (tx) => { ... })
 
 - Integration tests for:
 
-  _/initialize_
+  **/initialize**
 
-  _/book_
+  **/book**
 
-  _/cancel_
+  **/cancel**
 
-  _/status/:eventId_
+  **/status/:eventId**
 
 - Test Coverage
 
@@ -563,21 +481,7 @@ prisma.$transaction(async (tx) => { ... })
 
    - Strict TypeScript + ESLint standards
 
-## 🏁 Project Completion Summary
+## Summary
 
 This backend was built following clean architecture, SOLID service layers, dependency injection, test-driven design, and Prisma’s ORM workflow.
-Everything is fully typed with TypeScript and verified through integration tests that mirror real booking scenarios.
-
-### This README gives reviewers a full picture of:
-
-- Architecture
-
-- Setup
-
-- API usage
-
-- Testing
-
-- Database workflow
-
-- Seed & migration flow
+Everything is fully typed with TypeScript and verified through integration and unit tests .
