@@ -153,7 +153,8 @@ During development, multiple test-related questions led to the decision to build
 - worker leaks
 - inconsistences in mocks
 - Testing the real DB + business logic at once which was unstable
-  This made the unit tests more accurate and ensured that FIFO behavior, waitlist transitions, and booking IDs were validated thoroughly. The design also accounted for Jest teardown issues by eliminating lingering async timers and guaranteeing cleanup in mocks.
+  
+This made the unit tests more accurate and ensured that FIFO behavior, waitlist transitions, and booking IDs were validated thoroughly. The design also accounted for Jest teardown issues by eliminating lingering async timers and guaranteeing cleanup in mocks.
 
 Another part of the conversation focused heavily on environment configuration and infrastructure choices. Logging was implemented with Pino, rate-limiting and JWT authentication (Not implemented) were designed to be initialized purely from the project’s config.ts, and environment variables were structured with a full .env template. This isolates environment-specific behavior and keeps the application highly configurable across development, testing, and production.
 
