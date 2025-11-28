@@ -156,7 +156,7 @@ During development, multiple test-related questions led to the decision to build
   
 This made the unit tests more accurate and ensured that FIFO behavior, waitlist transitions, and booking IDs were validated thoroughly. The design also accounted for Jest teardown issues by eliminating lingering async timers and guaranteeing cleanup in mocks.
 
-Another part of the conversation focused heavily on environment configuration and infrastructure choices. Logging was implemented with Pino, rate-limiting and JWT authentication (Not implemented) were designed to be initialized purely from the project’s config.ts, and environment variables were structured with a full .env template. This isolates environment-specific behavior and keeps the application highly configurable across development, testing, and production.
+Another part I focused on was the environment configuration and infrastructure choices. Logging was implemented with Pino, rate-limiting and JWT authentication (Not implemented) were designed to be initialized purely from the project’s config.ts, and environment variables were structured with a full .env template. This isolates environment-specific behavior and keeps the application highly configurable across development, testing, and production.
 
 The user data and caching layer were also reshaped multiple times. The final iteration introduced a clear UserCache with lookup by ID and email, ensuring that frequently accessed user records could be fetched quickly without burdening the database. The refined design ensures both correctness and performance while still remaining simple enough.
 
