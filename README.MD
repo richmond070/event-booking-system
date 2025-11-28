@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This project implements a robust event booking system designed to manage ticket sales, enforce FIFO-based waiting lists, and maintain strict data consistency through transactional operations. It provides a clean separation of concerns using a layered architecture made up of Services, Stores, and Caches, with Prisma as the ORM for database persistence. While making clear use of four design patterns; Service Layer Pattern (Service Layer), Repository/Store Pattern (Store Layer), Dependency Injection (Constructor), and Factory Pattern (Prisma Client).
+This project implements a robust event booking system designed to manage ticket sales, enforce FIFO-based waiting lists, and maintain strict data consistency through transactional operations. It provides a clean separation of concerns using a layered architecture made up of Services, Stores, and Caches, with Prisma as the ORM for database persistence. 
 
 The system enables users to book or cancel tickets for an event while ensuring fairness, preventing race conditions, and automatically handling promotions from the waiting list when tickets become available. It includes full support for:
 
