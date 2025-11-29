@@ -129,11 +129,16 @@ npm run test:watch
 npm run test:integration
 ```
 
-## Brief Explanation ON My Design Choice
+## Brief Explanation On My Design Choice
 
 The project evolved through a series of design decisions aimed at building a reliable, scalable, and testable event-booking system with FIFO waitlisting, atomic transactions, consistent data models, and predictable behavior across concurrent operations. The entire architecture was refined through iterative questions touching on schemas, services, caching layers, tests, error handling, and database consistency—each influencing the final form of the application.
 
 The first major design choice was the separation of responsibilities into well-defined service classes. The BookingService, EventService, and various cache components were shaped to follow SOLID principles and maintain clear ownership of domain logic. This separation ensures that event persistence, booking operations, waitlist management, and cache lookups remain modular, easy to test, and simple to extend.
+
+A key driver behind this architecture was the introduction of two in-memory caching components—UserCache and BookingCache which played a central role in shaping the system’s performance strategy, concurrency safety, and overall design
+
+**UserCache** provides O(1) access to user records, reducing redundant Prisma lookups during booking flows and allowing the service layer to operate with a cache-first approach before falling back to the database.
+**BookingCache**, on the other hand, maintains real-time ticket availability snapshots and enforces an unavoidable FIFO counter for booking order. This design made it possible to guard against race conditions at the cache layer before transactions were executed in the database.
 
 A significant portion of the design effort centered around correct FIFO behavior for the waiting list. Something that informed this decision was the need for a unavoidable, testable, and promotion-safe ordering under all booking and cancellation flows.Through multiple iterations, the system was structured so that every booking operation—whether reserving a ticket or placing a user in the waitlist follows strict ordering guarantees. Careful attention was given to the data models, the in-memory queue structure, and the final version of the services to ensure that each user is processed according to arrival time and that waitlist promotions behave accordingly.
 
